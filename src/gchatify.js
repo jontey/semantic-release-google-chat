@@ -1,5 +1,5 @@
-const remark = require('remark')
-const toMarkdown = require('mdast-util-to-markdown')
+import { remark } from 'remark'
+import { toMarkdown } from 'mdast-util-to-markdown'
 
 /**
  * Options passed to toMarkdown() to format the output
@@ -15,7 +15,7 @@ const mdOptions = {
  * Return a JSON object meant to be sent to teams via a webhook. This object does not contain the details to the release
  * notes, but just the generic part.
  *
- * @see https://docs.microsoft.com/en-us/microsoftteams/platform/task-modules-and-cards/cards/cards-format?tabs=adaptive-md%2Cconnector-html#formatting-cards-with-markdown
+ * @see https://developers.google.com/chat/api/guides/message-formats/cards
  * @param context semantic-release plugin context
  * @returns {Object}
  */
@@ -26,13 +26,13 @@ const baseMessage = (pluginConfig, context) => {
 
   const facts = []
 
-  facts.push({ name: 'Version', value: `${nextRelease.gitTag} (${nextRelease.type})` })
+  facts.push({ title: 'Version', subtitle: `${nextRelease.gitTag} (${nextRelease.type})` })
 
   if (Object.keys(lastRelease).length > 0){
-    facts.push({ name: 'Last Release', value: lastRelease.gitTag })
+    facts.push({ title: 'Last Release', subtitle: lastRelease.gitTag })
   }
 
-  facts.push({ name: 'Commits', value: commits.length })
+  facts.push({ title: 'Commits', subtitle: commits.length })
 
   if (commits.length > 0 && (showContributors || showContributors === undefined)) {
     // prettier-ignore
@@ -43,23 +43,35 @@ const baseMessage = (pluginConfig, context) => {
         new Set()
       )
 
-    facts.push({ name: 'Contributors', value: Array.from(contributors).join(', ') })
+    facts.push({ title: 'Contributors', subtitle: Array.from(contributors).join(', ') })
   }
 
   return {
-    '@type': 'MessageCard',
-    '@context': 'http://schema.org/extensions',
-    themeColor: 'FC6D27', // gitlab orange
-    summary: title || 'A new version has been released',
+    header: {
+      "title": title || 'A new version has been released',
+      "subtitle": repository,
+      "imageUrl": imageUrl || 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4e/Gitlab_meaningful_logo.svg/144px-Gitlab_meaningful_logo.svg.png',
+      "imageType": "CIRCLE"
+    },
     sections: [
       {
-        activityTitle: title || 'A new version has been released',
-        activitySubtitle: repository,
-        activityImage: imageUrl || 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4e/Gitlab_meaningful_logo.svg/144px-Gitlab_meaningful_logo.svg.png',
-        facts,
-        markdown: true
-      },
-    ],
+        "widgets": [
+          {
+            "grid": {
+              "columnCount": 1,
+              "title": "",
+              "borderStyle": {
+                "type": "STROKE",
+                "cornerRadius": 4
+              },
+              "items": facts
+            }
+          }
+        ],
+        "header": "",
+        "collapsible": false
+      }
+    ]
   }
 }
 
@@ -109,7 +121,7 @@ const extractSections = (context) => {
   return sections
 }
 
-module.exports = (pluginConfig, context) => {
+export default (pluginConfig, context) => {
   const sections = extractSections(context)
   const teamsMessage = baseMessage(pluginConfig, context)
 

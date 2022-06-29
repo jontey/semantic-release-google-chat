@@ -1,5 +1,5 @@
-const fetch = require('node-fetch')
-const teamsify = require('./teamsify')
+import fetch from 'node-fetch'
+import gchatify from './gchatify.js'
 
 /**
  * Handle conflict with @semantic-release/git which causes the message to be sent twice.
@@ -39,17 +39,17 @@ const canNotify = (context) => {
   return true
 }
 
-module.exports = (pluginConfig, context) => {
+export default (pluginConfig, context) => {
   if (canNotify(context)) {
     const { logger, env } = context
     const { webhookUrl } = pluginConfig
-    const url = webhookUrl || env.TEAMS_WEBHOOK_URL
+    const url = webhookUrl || env.GOOGLE_CHAT_WEBHOOK_URL
     const headers = { 'Content-Type': 'application/json' }
-    const body = JSON.stringify(teamsify(pluginConfig, context))
+    const body = JSON.stringify(gchatify(pluginConfig, context))
 
     fetch(url, { method: 'post', body, headers})
-      .then(() => logger.log('Message sent to Microsoft Teams'))
-      .catch((error) => logger.error('An error occurred while sending the message to Microsoft Teams', error))
+      .then(() => logger.log('Message sent to Google Chat'))
+      .catch((error) => logger.error('An error occurred while sending the message to Google Chat', error))
       .finally(() => { env.HAS_PREVIOUS_EXECUTION = true })
   }
 };
