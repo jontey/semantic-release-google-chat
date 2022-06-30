@@ -1,5 +1,5 @@
-import fetch from 'node-fetch'
-import gchatify from './gchatify.js'
+const axios = require('axios')
+const gchatify = require('./gchatify')
 
 /**
  * Handle conflict with @semantic-release/git which causes the message to be sent twice.
@@ -39,17 +39,20 @@ const canNotify = (context) => {
   return true
 }
 
-export default (pluginConfig, context) => {
+module.exports = (pluginConfig, context) => {
   if (canNotify(context)) {
     const { logger, env } = context
     const { webhookUrl } = pluginConfig
     const url = webhookUrl || env.GOOGLE_CHAT_WEBHOOK_URL
-    const headers = { 'Content-Type': 'application/json' }
     const body = JSON.stringify(gchatify(pluginConfig, context))
-
-    fetch(url, { method: 'post', body, headers})
+    logger.log(body)
+    axios.post(url, body, {
+      headers: {
+        'content-type': 'application/json'
+      }
+    })
       .then(() => logger.log('Message sent to Google Chat'))
-      .catch((error) => logger.error('An error occurred while sending the message to Google Chat', error))
+      .catch((error) => logger.error('An error occurred while sending the message to Google Chat', error.response.data))
       .finally(() => { env.HAS_PREVIOUS_EXECUTION = true })
   }
 };

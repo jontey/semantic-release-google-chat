@@ -5,7 +5,7 @@ let webhookUrl = ''
 /**
  * A method to verify that the user has given us a teams webhook url to post to
  */
-export default async (pluginConfig, context) => {
+ module.exports = async (pluginConfig, context) => {
   const { env } = context
   const { webhookUrl: webhookUrlOption } = pluginConfig
   const { GOOGLE_CHAT_WEBHOOK_URL: webhookUrlVariable } = env

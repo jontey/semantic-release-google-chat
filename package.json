@@ -28,9 +28,13 @@
   },
   "homepage": "https://github.com/jontey/semantic-release-google-chat#readme",
   "dependencies": {
+    "axios": "^0.27.2",
+    "hast-util-to-html": "^8.0.3",
+    "marked": "^4.0.17",
+    "mdast-util-to-hast": "^12.1.1",
     "mdast-util-to-markdown": "^1.2.6",
-    "node-fetch": "^2.6.7",
-    "remark": "^14.0.2"
+    "remark": "^14.0.2",
+    "remark-html": "^15.0.1"
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^18.0.0",

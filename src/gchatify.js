@@ -1,15 +1,4 @@
-import { remark } from 'remark'
-import { toMarkdown } from 'mdast-util-to-markdown'
-
-/**
- * Options passed to toMarkdown() to format the output
- *
- * @see https://github.com/syntax-tree/mdast-util-to-markdown#api
- */
-const mdOptions = {
-  bullet: '-',
-  emphasis: '_',
-}
+const marked = require('marked')
 
 /**
  * Return a JSON object meant to be sent to teams via a webhook. This object does not contain the details to the release
@@ -26,13 +15,28 @@ const baseMessage = (pluginConfig, context) => {
 
   const facts = []
 
-  facts.push({ title: 'Version', subtitle: `${nextRelease.gitTag} (${nextRelease.type})` })
+  facts.push({ 
+    keyValue: {
+      topLabel: 'Version',
+      content: `${nextRelease.gitTag} (${nextRelease.type})`
+    }
+  })
 
   if (Object.keys(lastRelease).length > 0){
-    facts.push({ title: 'Last Release', subtitle: lastRelease.gitTag })
+    facts.push({ 
+      keyValue: {
+        topLabel: 'Last Release',
+        content: lastRelease.gitTag
+      }
+    })
   }
 
-  facts.push({ title: 'Commits', subtitle: commits.length })
+  facts.push({ 
+    keyValue: {
+      topLabel: 'Commits',
+      content: commits.length.toString()
+    }
+  })
 
   if (commits.length > 0 && (showContributors || showContributors === undefined)) {
     // prettier-ignore
@@ -43,7 +47,12 @@ const baseMessage = (pluginConfig, context) => {
         new Set()
       )
 
-    facts.push({ title: 'Contributors', subtitle: Array.from(contributors).join(', ') })
+    facts.push({ 
+      keyValue: {
+        topLabel: 'Contributors',
+        content: Array.from(contributors).join(', ')
+      }
+    })
   }
 
   return {
@@ -51,25 +60,11 @@ const baseMessage = (pluginConfig, context) => {
       "title": title || 'A new version has been released',
       "subtitle": repository,
       "imageUrl": imageUrl || 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4e/Gitlab_meaningful_logo.svg/144px-Gitlab_meaningful_logo.svg.png',
-      "imageType": "CIRCLE"
+      "imageStyle": "AVATAR"
     },
     sections: [
       {
-        "widgets": [
-          {
-            "grid": {
-              "columnCount": 1,
-              "title": "",
-              "borderStyle": {
-                "type": "STROKE",
-                "cornerRadius": 4
-              },
-              "items": facts
-            }
-          }
-        ],
-        "header": "",
-        "collapsible": false
+        "widgets": facts
       }
     ]
   }
@@ -100,39 +95,27 @@ const baseMessage = (pluginConfig, context) => {
  * ]
  */
 const extractSections = (context) => {
-  const tree = remark.parse(context.nextRelease.notes)
-  const sections = []
-
-  /* eslint-disable-next-line no-plusplus */
-  for (let i = 0 ; i < tree.children.length - 1 ; i++) {
-    const child = tree.children[i]
-    const nextChild = tree.children[i + 1]
-    if (
-      child.type === 'heading' && child.depth === 3 && child.children[0].type === 'text' && // child is a section
-      nextChild.type === 'list' && nextChild.children.length > 0 // next child is a list of changes
-    ) {
-      sections.push({
-        name: child.children[0].value,
-        changes: toMarkdown({ type: 'root', children: [nextChild] }, mdOptions)
-      })
-    }
-  }
-
-  return sections
+  const html = marked.parse(context.nextRelease.notes)
+  return html
 }
 
-export default (pluginConfig, context) => {
+module.exports = (pluginConfig, context) => {
   const sections = extractSections(context)
-  const teamsMessage = baseMessage(pluginConfig, context)
+  const gchatMessage = baseMessage(pluginConfig, context)
 
-  if (sections.length > 0) {
-    teamsMessage.sections.push({ text: '---' })
-  }
-
-  sections.forEach(section => {
-    teamsMessage.sections.push({ text: `## ${section.name}` })
-    teamsMessage.sections.push({ text: section.changes.replace('\n-', '\r-') })
+  gchatMessage.sections.push({
+    "widgets": [
+      {
+        textParagraph: {
+          text: sections
+        }
+      }
+    ]
   })
 
-  return teamsMessage
+  return {
+    cards: [
+      gchatMessage
+    ]
+  }
 }
