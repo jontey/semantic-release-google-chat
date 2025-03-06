@@ -3,13 +3,14 @@
     "commonjs": true,
     "es6": true
   },
+  "ignorePatterns": ["dist/**"],
   "extends": [
     "airbnb-base",
     "prettier"
   ],
   "plugins": ["prettier"],
   "parserOptions": {
-     "ecmaVersion": 2018
+    "ecmaVersion": 2018
   },
   "rules": {
   }

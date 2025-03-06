@@ -14,7 +14,7 @@
     }
   ],
   "scripts": {
-    "build": "rollup -c ",
+    "build": "rollup -c --bundleConfigAsCjs",
     "test": "exit 0",
     "lint": "eslint . --ext js",
     "release": "standard-version",
@@ -34,7 +34,7 @@
   ],
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/yllieth/semantic-release-ms-teams/issues"
+    "url": "https://github.com/jontey/semantic-release-google-chat/issues"
   },
   "homepage": "https://github.com/jontey/semantic-release-google-chat#readme",
   "dependencies": {
