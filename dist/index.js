@@ -19230,8 +19230,6 @@ function requireAxios () {
 	const supportsResponseStream = isReadableStreamSupported &&
 	  test(() => utils$1.isReadableStream(new Response('').body));
 
-	const supportsRequestStream = isReadableStreamSupported && test(() => {
-	  let duplexAccessed = false;
 
 	const resolvers = {
 	  stream: supportsResponseStream && ((res) => res.body)
