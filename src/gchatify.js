@@ -1,10 +1,33 @@
 const marked = require('marked')
 
 /**
+ * Custom renderer for marked to convert markdown into Google Chat compatible HTML
+ * @see https://developers.google.com/workspace/chat/format-messages#card-formatting
+ */
+const renderer = {
+  heading({ tokens, depth }) {
+    const text = this.parser.parseInline(tokens)
+    if (depth >= 4) {
+      return `<i>${text}</i>\n`
+    }
+    return `<b>${text}</b>\n\n`
+  },
+  list(token) {
+    const items = token.items.map((item) => this.listitem(item))
+    return `${items.join('\n')}\n\n`
+  },
+  listitem(item) {
+    return `&nbsp;&nbsp;&nbsp;&nbsp;- ${this.parser.parse(item.tokens, !!item.loose)}`
+  },
+}
+
+marked.use({ renderer })
+
+/**
  * Return a JSON object meant to be sent to teams via a webhook. This object does not contain the details to the release
  * notes, but just the generic part.
  *
- * @see https://developers.google.com/chat/api/guides/message-formats/cards
+ * @see https://developers.google.com/workspace/chat/create-messages#send-message-app
  * @param context semantic-release plugin context
  * @returns {Object}
  */
@@ -15,27 +38,42 @@ const baseMessage = (pluginConfig, context) => {
 
   const facts = []
 
-  facts.push({ 
-    keyValue: {
+  facts.push({
+    decoratedText: {
+      icon: {
+        materialIcon: {
+          name: 'deployed_code_update',
+        },
+      },
       topLabel: 'Version',
-      content: `${nextRelease.gitTag} (${nextRelease.type})`
-    }
+      text: `${nextRelease.gitTag} (${nextRelease.type})`,
+    },
   })
 
-  if (Object.keys(lastRelease).length > 0){
-    facts.push({ 
-      keyValue: {
+  if (Object.keys(lastRelease).length > 0) {
+    facts.push({
+      decoratedText: {
+        icon: {
+          materialIcon: {
+            name: 'label',
+          },
+        },
         topLabel: 'Last Release',
-        content: lastRelease.gitTag
-      }
+        text: lastRelease.gitTag,
+      },
     })
   }
 
-  facts.push({ 
-    keyValue: {
+  facts.push({
+    decoratedText: {
+      icon: {
+        materialIcon: {
+          name: 'commit',
+        },
+      },
       topLabel: 'Commits',
-      content: commits.length.toString()
-    }
+      text: commits.length.toString(),
+    },
   })
 
   if (commits.length > 0 && (showContributors || showContributors === undefined)) {
@@ -47,26 +85,33 @@ const baseMessage = (pluginConfig, context) => {
         new Set()
       )
 
-    facts.push({ 
-      keyValue: {
+    facts.push({
+      decoratedText: {
+        icon: {
+          materialIcon: {
+            name: 'group',
+          },
+        },
         topLabel: 'Contributors',
-        content: Array.from(contributors).join(', ')
-      }
+        text: Array.from(contributors).join(', '),
+      },
     })
   }
 
   return {
     header: {
-      "title": title || 'A new version has been released',
-      "subtitle": repository,
-      "imageUrl": imageUrl || 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4e/Gitlab_meaningful_logo.svg/144px-Gitlab_meaningful_logo.svg.png',
-      "imageStyle": "AVATAR"
+      title: title || 'A new version has been released',
+      subtitle: repository,
+      imageUrl:
+        imageUrl ||
+        'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4e/Gitlab_meaningful_logo.svg/144px-Gitlab_meaningful_logo.svg.png',
+      imageType: 'CIRCLE',
     },
     sections: [
       {
-        "widgets": facts
-      }
-    ]
+        widgets: facts,
+      },
+    ],
   }
 }
 
@@ -102,20 +147,17 @@ const extractSections = (context) => {
 module.exports = (pluginConfig, context) => {
   const sections = extractSections(context)
   const gchatMessage = baseMessage(pluginConfig, context)
-
   gchatMessage.sections.push({
-    "widgets": [
+    widgets: [
       {
         textParagraph: {
-          text: sections
-        }
-      }
-    ]
+          text: sections,
+        },
+      },
+    ],
   })
 
   return {
-    cards: [
-      gchatMessage
-    ]
+    cardsV2: [{ card: gchatMessage }],
   }
 }
