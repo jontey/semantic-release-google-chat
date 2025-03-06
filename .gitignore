@@ -1,6 +1,6 @@
 # IDE
 .idea
-vscode
+.vscode
 
 # packages
 node_modules
